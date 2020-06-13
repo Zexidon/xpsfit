@@ -1,4 +1,5 @@
 import numpy as np
+from multipledispatch import dispatch
 np.set_printoptions(suppress=True)
 
 
@@ -16,7 +17,7 @@ def scale(data, scaling):
 
 # Reduces the amount of data in the expected data to facilitate fitting to the observed data
 # To Do: account for missing x-axis if shift is large
-def match(expected, observed, lower, upper):
+def match(expected, observed):
     reduced = np.zeros((np.size(observed, 0), np.size(expected, 1)))
     i = 0
     for x in observed[:, 0]:
@@ -27,12 +28,50 @@ def match(expected, observed, lower, upper):
 
 
 # Calculates the Rf value of the expected vs observed data
-def residual(expected, observed, lower, upper):
-    observed = range_select(observed, lower, upper)
-    expected = match(expected, observed, lower, upper)
+@dispatch(np.ndarray, np.ndarray)
+def residual(expected, observed):
+    expected = match(expected, observed)
     numerator = np.sum(np.abs(np.abs(observed[:, 1]) - np.abs(expected[:, 1])))
     denominator = np.sum(np.abs(observed[:, 1]))
     return (numerator / denominator) * 100
+
+
+# Calculates the Rf value of the expected vs observed data
+# Only calculates within the desired range
+@dispatch(np.ndarray, np.ndarray, int, int)
+def residual(expected, observed, lower, upper):
+    observed = range_select(observed, lower, upper)
+    return residual(expected, observed)
+
+
+# Calculates the Rf value of the expected vs observed data
+# Only calculates within the desired range
+@dispatch(np.ndarray, np.ndarray, float, float)
+def residual(expected, observed, lower, upper):
+    if len(str(lower)) > 3 or len(str(upper)) > 3:
+        return print('Please limit range to one decimal point')
+    observed = range_select(observed, lower, upper)
+    return residual(expected, observed)
+
+
+# Calculates the Rf value of the expected vs observed data
+# Only calculates within the desired range
+@dispatch(np.ndarray, np.ndarray, int, float)
+def residual(expected, observed, lower, upper):
+    if len(str(upper)) > 3:
+        return print('Please limit range to one decimal point')
+    observed = range_select(observed, lower, upper)
+    return residual(expected, observed)
+
+
+# Calculates the Rf value of the expected vs observed data
+# Only calculates within the desired range
+@dispatch(np.ndarray, np.ndarray, float, int)
+def residual(expected, observed, lower, upper):
+    if len(str(lower)) > 3:
+        return print('Please limit range to one decimal point')
+    observed = range_select(observed, lower, upper)
+    return residual(expected, observed)
 
 
 # Trims the observed data to the desired range for fitting
@@ -42,14 +81,3 @@ def range_select(data, lower, upper):
     bottom = np.where((lower + 0.0001 >= search) & (search >= lower - 0.0001))
     ranged = data[top[0][0]:bottom[0][0]+1, :]
     return ranged
-
-
-anatase_theory = np.genfromtxt('anatase_python_test.csv', delimiter=',')
-anatase_theory = anatase_theory[1:]
-
-anatase_observed = np.genfromtxt('anatase_observed.csv', delimiter=',')
-anatase_observed = anatase_observed[1:]
-
-corrected = x_shift(scale(anatase_theory, 309.95), 2.61)
-print(residual(corrected, anatase_observed, 0, 9))
-
