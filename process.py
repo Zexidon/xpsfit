@@ -1,5 +1,6 @@
 import numpy as np
 from multipledispatch import dispatch
+
 np.set_printoptions(suppress=True)
 
 
@@ -28,50 +29,19 @@ def match(expected, observed):
 
 
 # Calculates the Rf value of the expected vs observed data
-@dispatch(np.ndarray, np.ndarray)
-def residual(expected, observed):
+def residual(expected, observed, lower='min', upper='max'):
+    if lower != 'min' and upper != 'max':
+        if isinstance(lower, (int, float)) == False or isinstance(upper, (int, float)) == False:
+            return print('Please input two numbers (up to one decimal point)')
+        elif upper <= lower:
+            return print('Upper bound must be smaller than lower bound')
+        elif len(str(lower)) > 3 or len(str(upper)) > 3:
+            return print('Please limit range values to one decimal point')
+        observed = range_select(observed, lower, upper)
     expected = match(expected, observed)
     numerator = np.sum(np.abs(np.abs(observed[:, 1]) - np.abs(expected[:, 1])))
     denominator = np.sum(np.abs(observed[:, 1]))
     return (numerator / denominator) * 100
-
-
-# Calculates the Rf value of the expected vs observed data
-# Only calculates within the desired range
-@dispatch(np.ndarray, np.ndarray, int, int)
-def residual(expected, observed, lower, upper):
-    observed = range_select(observed, lower, upper)
-    return residual(expected, observed)
-
-
-# Calculates the Rf value of the expected vs observed data
-# Only calculates within the desired range
-@dispatch(np.ndarray, np.ndarray, float, float)
-def residual(expected, observed, lower, upper):
-    if len(str(lower)) > 3 or len(str(upper)) > 3:
-        return print('Please limit range to one decimal point')
-    observed = range_select(observed, lower, upper)
-    return residual(expected, observed)
-
-
-# Calculates the Rf value of the expected vs observed data
-# Only calculates within the desired range
-@dispatch(np.ndarray, np.ndarray, int, float)
-def residual(expected, observed, lower, upper):
-    if len(str(upper)) > 3:
-        return print('Please limit range to one decimal point')
-    observed = range_select(observed, lower, upper)
-    return residual(expected, observed)
-
-
-# Calculates the Rf value of the expected vs observed data
-# Only calculates within the desired range
-@dispatch(np.ndarray, np.ndarray, float, int)
-def residual(expected, observed, lower, upper):
-    if len(str(lower)) > 3:
-        return print('Please limit range to one decimal point')
-    observed = range_select(observed, lower, upper)
-    return residual(expected, observed)
 
 
 # Trims the observed data to the desired range for fitting
@@ -79,5 +49,5 @@ def range_select(data, lower, upper):
     search = data[:, 0]
     top = np.where((upper + 0.0001 >= search) & (search >= upper - 0.0001))
     bottom = np.where((lower + 0.0001 >= search) & (search >= lower - 0.0001))
-    ranged = data[top[0][0]:bottom[0][0]+1, :]
+    ranged = data[top[0][0]:bottom[0][0] + 1, :]
     return ranged
