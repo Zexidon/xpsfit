@@ -1,11 +1,13 @@
 import process
-from numpy import genfromtxt as csvdata
+from process import Spectrum
 
-anatase_theory = csvdata('anatase_python_test.csv', delimiter=',')
-anatase_theory = anatase_theory[1:]
+anatase_theory = Spectrum('anatase_python_test.csv')
+anatase_observed = Spectrum('anatase_observed.csv')
 
-anatase_observed = csvdata('anatase_observed.csv', delimiter=',')
-anatase_observed = anatase_observed[1:]
+# anatase_theory.x_shift(2.61)
+# anatase_theory.scale(309.95)
+# print(process.residual(anatase_theory, anatase_observed, 0, 9))
+# print(process.residual(process.optimise(anatase_theory, anatase_observed, 2.6, 0, 9), anatase_observed))
 
-corrected = process.x_shift(process.scale(anatase_theory, 309.95), 2.61)
-print(process.residual(corrected, anatase_observed, 0, 9))
+optimised = process.optimise(anatase_theory, anatase_observed, 0, 9)
+print(optimised.data())
